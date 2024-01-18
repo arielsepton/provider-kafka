@@ -59,13 +59,18 @@ func NewAdminClient(ctx context.Context, data []byte, kube client.Client) (*kadm
 		case "aws-msk-iam":
 			mechanism = kaws.ManagedStreamingIAM(authenticateAwsIam)
 			opts = append(opts, kgo.Dialer((&tls.Dialer{NetDialer: &net.Dialer{Timeout: 10 * time.Second}}).DialContext))
+		case "scram-sha-256":
+			mechanism = scram.Auth{
+				User: kc.SASL.Username,
+				Pass: kc.SASL.Password,
+			}.AsSha256Mechanism()
 		case "scram-sha-512":
 			mechanism = scram.Auth{
 				User: kc.SASL.Username,
 				Pass: kc.SASL.Password,
 			}.AsSha512Mechanism()
 		default:
-			return nil, errors.Errorf("SASL mechanism %q not supported, only PLAIN / SCRAM-SHA-512 / AWS-MSK-IAM are supported for now.", kc.SASL.Mechanism)
+			return nil, errors.Errorf("SASL mechanism %q not supported, only PLAIN / SCRAM-SHA-512 / SCRAM-SHA-256 / AWS-MSK-IAM are supported for now.", kc.SASL.Mechanism)
 		}
 		opts = append(opts, kgo.SASL(mechanism))
 	}
